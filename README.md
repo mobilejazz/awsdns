@@ -2,19 +2,19 @@
 
 `awsdns` is a DNS server that lets you discover EC2 instances by a name you assign them (via tags).
 
-How does it work?
-
-* Add a tag called `awsdns` to the EC2 instances you want to give a name. The value of this tag will become the DNS name of the instance.
-* Run `awsdns` as a local DNS server on your machines.
-* Look up any EC2 instance by using the DNS name you assigned.
-
 Possible uses:
 
-* **Configuring dependencies by name**: For example, your application might need a mail server, a file sever, and a database server. You can give those servers meaningful names like `mailserver.intranet.` instead of hard-coding IPs in your config files.
+* **Configuring dependencies by name**: For example, your application might need a mail server, a file sever, and a database server. You can give those servers meaningful names like `mailserver.awsdns.` instead of hard-coding IPs in your config files.
 * **Adapting to infrastructure changes**: On ephemeral machines, IP address change all the time. Usign a DNS name lets all machines that depend on it discover the new one, without reconfiguring anything. This helps you when you start/stop machines, replace them with different instance types or for auto-scaling groups.
 * **Load balancing**: If several instances have the same name, `awsdns` will resolve their names randomly, spreading the worload evenly between them.
 
-## Usage
+How does it work?
+
+* Add a tag called `awsdns` to the EC2 instances you want to give a name. The value of this tag will become the DNS name of the instance.
+* Run `awsdns` as a local DNS server and configure it as your DNS server.
+* Look up any EC2 instance by using the name you assigned.
+
+## Running `awsdns`
 
 Make sure your EC2 instances have a tag that you can use to refer to them (for example, you can use the tag `awsdns`), set a value like `mailserver`. This instance will get a name like `mailserver.awsdns.`.
 
@@ -25,6 +25,8 @@ Make sure your EC2 instances have a tag that you can use to refer to them (for e
 * `--tag=tagname`: tag name in EC2 that contains the DNS name. By default, `awsdns`.
 * `--alternateDNS=dns-server`: DNS server to resolve names not in the `awsdns.` domain. By default, `169.254.169.253`, which is an AWS server available to EC2 instances.
 * `--verbose`: Chattier version with some debugging information
+
+Once you have `awsdns` running, you may want to edit your `/etc/resolv.conf` file to point to it.
 
 ### AWS Region
 
