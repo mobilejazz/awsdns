@@ -16,13 +16,15 @@ Possible uses:
 
 ## Usage
 
+Make sure your EC2 instances have a tag that you can use to refer to them (for example, you can use the tag `awsdns`), set a value like `mailserver`. This instance will get a name like `mailserver.awsdns.`.
+
 `awsdns` accepts the following configuration parameters:
 
 * `--bind=ipaddress:port`: binding address and port. Sets both TCP and UDP. By default, `127.0.0.1:53`. Please note that you will need to be root to be able to access port 53.
 * `--ttl=seconds`: time that the results will remain in cache, in seconds. This value is used for the TTL in the answers, so clients can cache them, and also internally for caching the responses given by AWS. By default, `30`.
 * `--tag=tagname`: tag name in EC2 that contains the DNS name. By default, `awsdns`.
-* `--alternateDNS=dns-server`: DNS server to resolve names not in the `awsdns.` domain.
-* `--verbose`: Chattier version
+* `--alternateDNS=dns-server`: DNS server to resolve names not in the `awsdns.` domain. By default, `169.254.169.253`, which is an AWS server available to EC2 instances.
+* `--verbose`: Chattier version with some debugging information
 
 ### AWS Region
 
@@ -35,7 +37,7 @@ Region is taken from, in this order:
 You can configure the region in the `~/.aws/config` file, like this:
 
 ```
-[d`fault]
+[default]
 region = us-east-1
 ```
 
