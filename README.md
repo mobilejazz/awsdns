@@ -23,7 +23,7 @@ Make sure your EC2 instances have a tag that you can use to refer to them (for e
 * `--bind=ipaddress:port`: binding address and port. Sets both TCP and UDP. By default, `127.0.0.1:53`. Please note that you will need to be root to be able to access port 53.
 * `--ttl=seconds`: time that the results will remain in cache, in seconds. This value is used for the TTL in the answers, so clients can cache them, and also internally for caching the responses given by AWS. By default, `30`.
 * `--tag=tagname`: tag name in EC2 that contains the DNS name. By default, `awsdns`.
-* `--alternateDNS=dns-server`: DNS server to resolve names not in the `awsdns.` domain. By default, `169.254.169.253`, which is an AWS server available to EC2 instances.
+* `--alternateDNS=dns-server:port`: DNS server to resolve names not in the `awsdns.` domain. By default, `169.254.169.253:53`, which is an AWS server available to EC2 instances.
 * `--verbose`: Chattier version with some debugging information
 
 Once you have `awsdns` running, you may want to edit your `/etc/resolv.conf` file to point to it.

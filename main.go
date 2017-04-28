@@ -4,7 +4,6 @@ import (
 	"flag"
 	"log"
 	"math/rand"
-	"net"
 	"os"
 	"os/signal"
 	"strings"
@@ -103,23 +102,22 @@ func handleAWSDNSRequest(w dns.ResponseWriter, r *dns.Msg) {
 				log.Println("Error looking up name", ec2Name, err)
 				dns.HandleFailed(w, r)
 				return
-			} else {
-				if *verbose {
-					log.Println("AWS query result:", cnames)
+			}
+			if *verbose {
+				log.Println("AWS query result:", cnames)
+			}
+			for _, cname := range cnames {
+				rr := new(dns.CNAME)
+				rr.Hdr = dns.RR_Header{
+					Name:   q.Name,
+					Rrtype: dns.TypeCNAME,
+					Class:  dns.ClassINET,
+					Ttl:    ttl,
 				}
-				for _, cname := range cnames {
-					rr := new(dns.CNAME)
-					rr.Hdr = dns.RR_Header{
-						Name:   q.Name,
-						Rrtype: dns.TypeCNAME,
-						Class:  dns.ClassINET,
-						Ttl:    ttl,
-					}
-					rr.Target = cname + "."
-					m.Answer = append(m.Answer, rr)
-					if *verbose {
-						log.Println("Appending answer", rr)
-					}
+				rr.Target = cname + "."
+				m.Answer = append(m.Answer, rr)
+				if *verbose {
+					log.Println("Appending answer", rr)
 				}
 			}
 		}
@@ -132,20 +130,19 @@ func handleAlternateDNSRequest(w dns.ResponseWriter, r *dns.Msg) {
 	if *verbose {
 		log.Println("Handling request on alternate server:", r)
 	}
-
-	transport := "udp"
-	if _, ok := w.RemoteAddr().(*net.TCPAddr); ok {
-		transport = "tcp"
-	}
-
-	c := &dns.Client{Net: transport}
+	c := new(dns.Client)
 	resp, _, err := c.Exchange(r, *alternateDNS)
 	if err != nil {
+		if *verbose {
+			log.Println("Error from alternate server:", err)
+		}
 		dns.HandleFailed(w, r)
 		return
 	}
+	if *verbose {
+		log.Println("Response from alternate server:", resp)
+	}
 	w.WriteMsg(resp)
-
 }
 
 func main() {
@@ -153,7 +150,7 @@ func main() {
 	bind = flag.String("bind", "127.0.0.1:53", "binding address and port (both tcp/udp)")
 	ttl = flag.Uint("ttl", 30, "time the the results will remain in cache, in seconds")
 	tag = flag.String("tag", "awsdns", "tag name to be matched by dns query")
-	alternateDNS = flag.String("alternate-dns", "169.254.169.253", "dns server where queries will be redirected if not in the awsdns. zone")
+	alternateDNS = flag.String("alternate-dns", "169.254.169.253:53", "dns server where queries will be redirected if not in the awsdns. zone")
 	verbose = flag.Bool("verbose", false, "verbose logging")
 	flag.Parse()
 
