@@ -2,8 +2,11 @@ package main
 
 import (
 	"flag"
+	"fmt"
+	"io/ioutil"
 	"log"
 	"math/rand"
+	"net/http"
 	"os"
 	"os/signal"
 	"strings"
@@ -24,15 +27,32 @@ var (
 	kche       *cache.Cache
 	forwardDNS *string
 	verbose    *bool
+	awsSession *session.Session
 )
 
-func queryDNSnamesForEC2instances(tagName string, tagValue string) ([]string, error) {
-	// aws ec2 describe-instances --filters "Name=tag:Name,Values=xxx" "Name=instance-state-name,Values=running" --query 'Reservations[0].Instances[*].PublicDnsName'
+func makeAWSSession() (*session.Session, error) {
 	sess := session.Must(session.NewSessionWithOptions(session.Options{
 		SharedConfigState: session.SharedConfigEnable,
 	}))
+	if aws.StringValue(sess.Config.Region) == "" {
+		if *verbose {
+			log.Println("No region configured, reading metadata")
+		}
+		region, err := getAWSRegionFromMetadata()
+		if err != nil {
+			return nil, err
+		}
+		if *verbose {
+			log.Println("Using region:", *region)
+		}
+		sess.Config.Region = region
+	}
+	return sess, nil
+}
 
-	svc := ec2.New(sess)
+func queryDNSnamesForEC2instances(tagName string, tagValue string) ([]string, error) {
+	// aws ec2 describe-instances --filters "Name=tag:Name,Values=xxx" "Name=instance-state-name,Values=running" --query 'Reservations[0].Instances[*].PublicDnsName'
+	svc := ec2.New(awsSession)
 
 	params := &ec2.DescribeInstancesInput{
 		Filters: []*ec2.Filter{
@@ -145,6 +165,29 @@ func forwardDNSRequest(w dns.ResponseWriter, r *dns.Msg) {
 	w.WriteMsg(resp)
 }
 
+func getAWSRegionFromMetadata() (*string, error) {
+	// curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone
+	var client http.Client
+	resp, err := client.Get("http://169.254.169.254/latest/meta-data/placement/availability-zone")
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 { // OK
+		return nil, fmt.Errorf("Could not get AZ from metadata, code: %d", resp.StatusCode)
+	}
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	az := string(bodyBytes)
+
+	// remove last letter, it belongs to the AZ, the rest is the region
+	region := az[:len(az)-1]
+	return &region, nil
+}
+
 func main() {
 	// Parse flags
 	bind = flag.String("bind", "127.0.0.1:53", "binding address and port (both tcp/udp)")
@@ -159,10 +202,15 @@ func main() {
 	cleanupInterval := time.Duration(10) * expirationDuration
 	kche = cache.New(expirationDuration, cleanupInterval)
 
-	// Attach request handler func
-	dns.HandleFunc(".", handleDNSRequest)
+	// AWS
+	sess, err := makeAWSSession()
+	if err != nil {
+		panic(err)
+	}
+	awsSession = sess
 
 	// Start server
+	dns.HandleFunc(".", handleDNSRequest)
 	udpServer := &dns.Server{Addr: *bind, Net: "udp"}
 	tcpServer := &dns.Server{Addr: *bind, Net: "tcp"}
 	dns.HandleFunc(".", handleDNSRequest)

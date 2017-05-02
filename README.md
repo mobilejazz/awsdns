@@ -34,7 +34,7 @@ Region is taken from, in this order:
 
 * `AWS_REGION` environment variable
 * `~/.aws/config` file, if no environment variable is configured
-* _(not implemented)_ Region where the instance is running, if you're running in EC2 and no environment variable nor config file is configured
+* Region where the instance is running, if you're running in EC2 and no environment variable nor config file is configured
 
 You can configure the region in the `~/.aws/config` file, like this:
 
