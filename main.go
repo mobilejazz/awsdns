@@ -18,12 +18,12 @@ import (
 )
 
 var (
-	bind         *string
-	ttl          *uint
-	tag          *string
-	kche         *cache.Cache
-	alternateDNS *string
-	verbose      *bool
+	bind       *string
+	ttl        *uint
+	tag        *string
+	kche       *cache.Cache
+	forwardDNS *string
+	verbose    *bool
 )
 
 func queryDNSnamesForEC2instances(tagName string, tagValue string) ([]string, error) {
@@ -86,7 +86,7 @@ func handleDNSRequest(w dns.ResponseWriter, r *dns.Msg) {
 	if r.Opcode == dns.OpcodeQuery && strings.HasSuffix(r.Question[0].Name, "awsdns.") {
 		handleAWSDNSRequest(w, r)
 	} else {
-		handleAlternateDNSRequest(w, r)
+		forwardDNSRequest(w, r)
 	}
 }
 
@@ -126,21 +126,21 @@ func handleAWSDNSRequest(w dns.ResponseWriter, r *dns.Msg) {
 	w.WriteMsg(m)
 }
 
-func handleAlternateDNSRequest(w dns.ResponseWriter, r *dns.Msg) {
+func forwardDNSRequest(w dns.ResponseWriter, r *dns.Msg) {
 	if *verbose {
-		log.Println("Handling request on alternate server:", r)
+		log.Println("Handling request on forward server:", r)
 	}
 	c := new(dns.Client)
-	resp, _, err := c.Exchange(r, *alternateDNS)
+	resp, _, err := c.Exchange(r, *forwardDNS)
 	if err != nil {
 		if *verbose {
-			log.Println("Error from alternate server:", err)
+			log.Println("Error from forward server:", err)
 		}
 		dns.HandleFailed(w, r)
 		return
 	}
 	if *verbose {
-		log.Println("Response from alternate server:", resp)
+		log.Println("Response from forward server:", resp)
 	}
 	w.WriteMsg(resp)
 }
@@ -150,7 +150,7 @@ func main() {
 	bind = flag.String("bind", "127.0.0.1:53", "binding address and port (both tcp/udp)")
 	ttl = flag.Uint("ttl", 30, "time the the results will remain in cache, in seconds")
 	tag = flag.String("tag", "awsdns", "tag name to be matched by dns query")
-	alternateDNS = flag.String("alternate-dns", "169.254.169.253:53", "dns server where queries will be redirected if not in the awsdns. zone")
+	forwardDNS = flag.String("forward", "169.254.169.253:53", "dns server where queries will be forwarded if not in the awsdns. zone")
 	verbose = flag.Bool("verbose", false, "verbose logging")
 	flag.Parse()
 
