@@ -149,7 +149,7 @@ func main() {
 	// Parse flags
 	bind = flag.String("bind", "127.0.0.1:53", "binding address and port (both tcp/udp)")
 	ttl = flag.Uint("ttl", 30, "time the the results will remain in cache, in seconds")
-	tag = flag.String("tag", "awsdns", "tag name to be matched by dns query")
+	tag = flag.String("tag", "Name", "tag name to be matched by dns query")
 	forwardDNS = flag.String("forward", "169.254.169.253:53", "dns server where queries will be forwarded if not in the awsdns. zone")
 	verbose = flag.Bool("verbose", false, "verbose logging")
 	flag.Parse()

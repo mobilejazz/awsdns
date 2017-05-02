@@ -10,7 +10,7 @@ Possible uses:
 
 How does it work?
 
-* Add a tag called `awsdns` to the EC2 instances you want to give a name. The value of this tag will become the DNS name of the instance.
+* Add a tag (or by default we use the `Name` tag) to the EC2 instances you want to give a name. The value of this tag will become the DNS name of the instance.
 * Run `awsdns` as a local DNS server and configure it as your DNS server.
 * Look up any EC2 instance by using the name you assigned.
 
@@ -22,7 +22,7 @@ Make sure your EC2 instances have a tag that you can use to refer to them (for e
 
 * `--bind=ipaddress:port`: binding address and port. Sets both TCP and UDP. By default, `127.0.0.1:53`. Please note that you will need to be root to be able to access port 53.
 * `--ttl=seconds`: time that the results will remain in cache, in seconds. This value is used for the TTL in the answers, so clients can cache them, and also internally for caching the responses given by AWS. By default, `30`.
-* `--tag=tagname`: tag name in EC2 that contains the DNS name. By default, `awsdns`.
+* `--tag=tagname`: tag name in EC2 that contains the DNS name. By default, `Name`.
 * `--forward=dns-server:port`: DNS server to resolve names not in the `awsdns.` domain. By default, `169.254.169.253:53`, which is an AWS server available to EC2 instances.
 * `--verbose`: Chattier version with some debugging information
 
@@ -34,7 +34,7 @@ Region is taken from, in this order:
 
 * `AWS_REGION` environment variable
 * `~/.aws/config` file, if no environment variable is configured
-* Region where the instance is running, if you're running in EC2 and no environment variable nor config file is configured
+* _(not implemented)_ Region where the instance is running, if you're running in EC2 and no environment variable nor config file is configured
 
 You can configure the region in the `~/.aws/config` file, like this:
 
