@@ -139,6 +139,30 @@ func handleAWSDNSRequest(w dns.ResponseWriter, r *dns.Msg) {
 				if *verbose {
 					log.Println("Appending answer", rr)
 				}
+				// append recursive answer
+				{
+					c := new(dns.Client)
+					rm := new(dns.Msg)
+					rm.SetQuestion(cname+".", dns.TypeA)
+					rm.RecursionDesired = true
+					if *verbose {
+						log.Println("Querying forward server for A records", m)
+					}
+					resp, _, err := c.Exchange(rm, *forwardDNS)
+					if err != nil {
+						if *verbose {
+							log.Println("Error from forward server:", err)
+						}
+						dns.HandleFailed(w, r)
+						return
+					}
+					for _, a := range resp.Answer {
+						m.Answer = append(m.Answer, a)
+					}
+					if *verbose {
+						log.Println("Response from forward server:", resp)
+					}
+				}
 			}
 		}
 	}
